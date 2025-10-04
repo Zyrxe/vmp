@@ -1,280 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Identity Portrait Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f9fb;
-        }
-        /* Custom spinner for loading state */
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #10b981; /* Tailwind emerald-500 */
-            width: 30px;
-            height: 30px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
-        }
-        @-webkit-keyframes spin {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body>
-    <div class="min-h-screen p-4 md:p-8 flex flex-col items-center">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">AI Identity Preservation Portrait</h1>
-            <p class="text-gray-600 mt-2">Gunakan wajah referensi untuk menghasilkan foto studio berkualitas tinggi dengan detail wajah yang sama persis.</p>
-        </header>
+import requests
+import base64
 
-        <main class="w-full max-w-6xl flex flex-col lg:flex-row gap-8">
-            <!-- Left Side: Controls -->
-            <div class="lg:w-1/2 p-6 bg-white rounded-xl shadow-lg h-full">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">1. Konfigurasi Input Wajah & Prompt</h2>
-                
-                <!-- File Upload -->
-                <div class="mb-5">
-                    <label for="faceImage" class="block text-sm font-medium text-gray-700 mb-2">Unggah Gambar Wajah Referensi (.jpg atau .png)</label>
-                    <input type="file" id="faceImage" accept="image/jpeg, image/png" class="w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-full file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-emerald-50 file:text-emerald-700
-                        hover:file:bg-emerald-100" />
-                </div>
+# =============================
+# 1️⃣ Masukkan API Key kamu di sini
+# =============================
+API_KEY = "AIzaSyCgtU-KpwC5bjQS1QHFzFsPf81RevkHHbc"  # <-- Ganti dengan API key kamu, JANGAN dibagikan ke publik
 
-                <!-- Aspect Ratio Selector -->
-                <div class="mb-5">
-                    <label for="aspectRatio" class="block text-sm font-medium text-gray-700 mb-2">Pilihan Rasio Aspek (Size)</label>
-                    <select id="aspectRatio" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="1080x1920">1080x1920 (9:16 - Portrait)</option>
-                        <option value="1024x1024">1024x1024 (1:1 - Square)</option>
-                        <option value="1920x1080">1920x1080 (16:9 - Landscape)</option>
-                    </select>
-                </div>
+# =============================
+# 2️⃣ Masukkan gambar wajah kamu
+# =============================
+# Ganti 'face.jpg' dengan nama file gambar wajah laki-laki yang kamu punya
+with open("face.jpg", "rb") as f:
+    image_base64 = base64.b64encode(f.read()).decode("utf-8")
 
-                <!-- Prompt Input -->
-                <div class="mb-5">
-                    <label for="mainPrompt" class="block text-sm font-medium text-gray-700 mb-2">Prompt Utama (Deskripsi Hasil)</label>
-                    <textarea id="mainPrompt" rows="4" class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md p-3"
-                        placeholder="Masukkan detail seperti gaya (cinematic, natural), pencahayaan, dan lingkungan...">
-Enhance lighting and background artistically (cinematic style), but preserve the person’s exact facial identity and expression. Use realistic skin texture, soft studio lighting, and natural color tones.
-                    </textarea>
-                </div>
+# =============================
+# 3️⃣ Prompt untuk menjaga wajah tetap sama
+# =============================
+prompt_text = (
+    "Use the provided face image as reference. "
+    "Keep the person's facial identity, features, and proportions exactly the same — "
+    "do not modify or stylize the face. "
+    "Generate a high-quality, realistic portrait in 9:16 aspect ratio. "
+    "You may adjust lighting and background artistically, but the person's face must remain identical."
+)
 
-                <!-- Negative Prompt Input -->
-                <div class="mb-6">
-                    <label for="negativePrompt" class="block text-sm font-medium text-gray-700 mb-2">Negative Prompt (Apa yang Dihindari)</label>
-                    <textarea id="negativePrompt" rows="3" class="shadow-sm focus:ring-emerald-500 focus:border-emerald-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md p-3"
-                        placeholder="Kata kunci yang ingin Anda hindari...">
-different face, distorted face, cartoon, anime, deformed, mutated, aged, low quality, unrealistic skin, changed gender, overexposed, underexposed
-                    </textarea>
-                </div>
+# =============================
+# 4️⃣ Request ke API Gemini
+# =============================
+url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-                <!-- Generate Button -->
-                <button onclick="generateImage()" id="generateBtn" 
-                        class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150 ease-in-out disabled:opacity-50">
-                    <span id="btnText">Generate Portrait Realistis</span>
-                    <div id="spinner" class="spinner hidden ml-3"></div>
-                </button>
+headers = {
+    "Content-Type": "application/json",
+    "x-goog-api-key": API_KEY
+}
 
-                <p id="errorMsg" class="text-red-500 text-sm mt-3 text-center hidden"></p>
-            </div>
-
-            <!-- Right Side: Output -->
-            <div class="lg:w-1/2 p-6 bg-white rounded-xl shadow-lg flex flex-col items-center">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">2. Hasil Generasi AI</h2>
-                <div id="outputContainer" class="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center relative overflow-hidden">
-                    <img id="generatedImage" src="" alt="Generated AI Portrait" class="hidden object-contain max-h-full max-w-full rounded-lg shadow-xl" />
-                    <p id="placeholderText" class="text-gray-400 p-4 text-center">Hasil gambar akan muncul di sini setelah Anda menekan tombol Generate.</p>
-                </div>
-
-                <div id="info" class="text-xs text-gray-500 mt-4 p-2 bg-gray-50 rounded-lg w-full">
-                    <p><strong>Model:</strong> gemini-2.5-flash-image-preview</p>
-                    <p><strong>Tujuan:</strong> *Identity Preservation* (Mempertahankan identitas wajah).</p>
-                    <p><strong>Panduan:</strong> Pastikan Anda menggunakan gambar wajah yang jelas sebagai referensi.</p>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script type="module">
-        const apiKey = "AIzaSyCgtU-KpwC5bjQS1QHFzFsPf81RevkHHbc"; 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
-
-        // UI elements
-        const faceImageInput = document.getElementById('faceImage');
-        const aspectRatioSelect = document.getElementById('aspectRatio');
-        const mainPromptTextarea = document.getElementById('mainPrompt');
-        const negativePromptTextarea = document.getElementById('negativePrompt');
-        const generateBtn = document.getElementById('generateBtn');
-        const btnText = document.getElementById('btnText');
-        const spinner = document.getElementById('spinner');
-        const generatedImage = document.getElementById('generatedImage');
-        const placeholderText = document.getElementById('placeholderText');
-        const errorMsg = document.getElementById('errorMsg');
-
-        /**
-         * Converts a File object to a Base64 string.
-         * @param {File} file The image file to convert.
-         * @returns {Promise<string>} The base64 data string (without mimeType prefix).
-         */
-        const fileToBase64 = (file) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    // Extract the base64 string part (remove 'data:image/jpeg;base64,' prefix)
-                    const base64String = reader.result.split(',')[1];
-                    resolve(base64String);
-                };
-                reader.onerror = (error) => reject(error);
-            });
-        };
-
-        /**
-         * Handles the image generation process using the Gemini API.
-         */
-        window.generateImage = async () => {
-            errorMsg.classList.add('hidden');
-            generatedImage.classList.add('hidden');
-            placeholderText.textContent = "Sedang Memproses Gambar...";
-
-            if (faceImageInput.files.length === 0) {
-                errorMsg.textContent = "Mohon unggah gambar wajah sebagai referensi.";
-                errorMsg.classList.remove('hidden');
-                placeholderText.textContent = "Hasil gambar akan muncul di sini setelah Anda menekan tombol Generate.";
-                return;
-            }
-
-            // --- State Setup ---
-            generateBtn.disabled = true;
-            btnText.textContent = "Generating...";
-            spinner.classList.remove('hidden');
-
-            try {
-                // --- 1. Get Base64 from Image ---
-                const faceImageFile = faceImageInput.files[0];
-                const mimeType = faceImageFile.type;
-                const base64Data = await fileToBase64(faceImageFile);
-
-                // --- 2. Construct the Prompt and System Instruction ---
-                const aspectRatio = aspectRatioSelect.value;
-                const userPrompt = mainPromptTextarea.value;
-                const negativePrompt = negativePromptTextarea.value;
-
-                // Combining the user's base prompt logic with the custom prompt
-                const combinedPrompt = (
-                    "Use the provided face image as reference. " +
-                    "Keep the person’s facial identity, features, and proportions exactly the same — " +
-                    "do not modify, stylize, or alter the face in any way. " +
-                    `Generate a high-quality, realistic portrait in ${aspectRatio} aspect ratio based on the following artistic request: ` +
-                    userPrompt
-                );
-
-                const systemInstruction = {
-                    parts: [{
-                        text: "You are a realistic portrait generator specializing in identity preservation. Your primary goal is to maintain the facial features and identity of the input image while applying artistic enhancements based on the user's text prompt. Do not change gender, age, or expression."
-                    }]
-                };
-
-                // --- 3. Construct the API Payload (following user's structure) ---
-                const payload = {
-                    contents: [
-                        {
-                            parts: [
-                                { text: combinedPrompt },
-                                {
-                                    inlineData: {
-                                        mimeType: mimeType,
-                                        data: base64Data
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    config: {
-                         // We adapt the user's negative prompt and size into the config
-                        negativePrompt: negativePrompt,
-                        outputSize: aspectRatio,
-                        // Other generation settings from the user's original Python script are not directly
-                        // supported as single fields in this endpoint, but the combined prompt and system instruction 
-                        // achieve the same goal. The model is inherently realistic/identity-preserving.
-                    },
-                    systemInstruction: systemInstruction,
-                };
-                
-                // --- 4. Exponential Backoff and Fetch ---
-                let response = null;
-                const maxRetries = 5;
-                let delay = 1000;
-
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.ok) {
-                            break; // Success
-                        } else if (response.status === 429 && i < maxRetries - 1) {
-                            // Rate limit, retry
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            delay *= 2;
-                        } else {
-                            throw new Error(`API returned status ${response.status}: ${response.statusText}`);
-                        }
-                    } catch (e) {
-                        if (i === maxRetries - 1) throw e;
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
+payload = {
+    "contents": [
+        {
+            "parts": [
+                {"text": prompt_text},
+                {
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": image_base64
                     }
                 }
+            ]
+        }
+    ]
+}
 
-                if (!response || !response.ok) {
-                    throw new Error("Gagal mengambil respons dari API setelah beberapa kali percobaan.");
-                }
+response = requests.post(url, headers=headers, json=payload)
 
-                // --- 5. Process Response ---
-                const result = await response.json();
-                const base64Image = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-                if (!base64Image) {
-                    const errorDetails = result.candidates?.[0]?.finishReason || "Gambar tidak dapat dihasilkan. Coba prompt atau gambar lain.";
-                    throw new Error(`Gagal memproses gambar. Detail: ${errorDetails}`);
-                }
-
-                // Display the image
-                generatedImage.src = `data:image/${mimeType.split('/')[1]};base64,${base64Image}`;
-                generatedImage.classList.remove('hidden');
-                placeholderText.classList.add('hidden');
-
-            } catch (error) {
-                console.error('Error during image generation:', error);
-                errorMsg.textContent = `Terjadi kesalahan: ${error.message}.`;
-                errorMsg.classList.remove('hidden');
-                placeholderText.textContent = "Hasil gambar akan muncul di sini setelah Anda menekan tombol Generate.";
-
-            } finally {
-                // --- State Cleanup ---
-                generateBtn.disabled = false;
-                btnText.textContent = "Generate Portrait Realistis";
-                spinner.classList.add('hidden');
-            }
-        };
-    </script>
-</body>
-</html>
+# =============================
+# 5️⃣ Tampilkan hasil respons
+# =============================
+if response.status_code == 200:
+    print("✅ Success:")
+    print(response.json())
+else:
+    print("❌ Error:", response.status_code, response.text)
